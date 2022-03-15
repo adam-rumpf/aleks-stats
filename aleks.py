@@ -71,3 +71,8 @@ with open("data/AllCohorts.txt", 'r') as f:
             names[rows[-1][0]] = [len(rows)]
         else:
             names[rows[-1][0]].append(len(rows))
+
+### Stats to try gathering:
+# Trends in each score category over time (requires grouping students by term; just make box and whisker charts to get an idea)
+# Clustering groups of similar students that span multiple terms (for later A/B testing)
+### (after we have result data we can try correlating placements with outcomes)
