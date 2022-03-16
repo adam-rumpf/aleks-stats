@@ -1,10 +1,176 @@
 """A script for gathering stats from ALEKS cohort reports."""
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 #=============================================================================
-# Functions
+# Classes
+#=============================================================================
+
+class Student:
+    """An object to contain all information from a student's attempts"""
+
+    #-------------------------------------------------------------------------
+
+    def __init__(self, name, module=-1, last_level=-1, last_class=-1):
+        """Student(name[, module][, last_level][, last_class])
+
+        Constructs a new student and initializes empty storage attributes.
+
+        Positional arguments:
+            name (str) - student name
+
+        Keyword arguments:
+            module (int) - module index (default -1)
+                -1 for N/A
+                0 for precalculus
+                1 for calculus
+            last_level (int) - level of last math class taken (default -1)
+                -1 for unknown
+                0 for high school
+                1 for college
+            last_class (int) - class ID of last math class taken (default -1)
+                -1 for unknown
+                additional integer IDs defined by global class list
+        """
+
+        # Initialize attributes
+        self.name = name # student name
+        self.cohort = None # associated cohort object
+        self.scores = [] # list of overall scores from all attempts
+        self.subject_scores = [] # list of lists of subject scores
+        self.module = module # learning module
+        self.masteries = [] # before/after tuples for each module attempt
+        self.last_level = last_level # last math class level
+        self.last_class = last_class # last math class list index
+
+    #-------------------------------------------------------------------------
+
+    def log_attempt(self, row):
+        """Student.log_attempt(row)
+
+        Adds all data from a given attempt for the student.
+
+        Positional arguments:
+            row (list) - list of attempt attributes, including:
+                0 - overall score
+                1 - whole numbers, fractions, and decimals
+                2 - percents, proportions, and geometry
+                3 - signed numbers, linear equations, and inequalities
+                4 - lines and systems of linear equations
+                5 - relations and functions
+                6 - integer exponents and factoring
+                7 - quadratic and polynomial functions
+                8 - rational expressions and functions
+                9 - radicals and rational exponents
+                10 - exponents and logarithms
+                11 - trigonometry
+                12 - "before" module mastery
+                13 - "after" module mastery
+        """
+
+        pass
+
+    #---------------------------------------------------------------------
+
+    def best_score(self):
+        """Student.best_score()
+
+        Returns the student's best overall score.
+        """
+
+        return max(self.scores)
+    
+    #---------------------------------------------------------------------
+
+    def last_score(self):
+        """Student.last_score()
+
+        Returns the student's most recent overall score.
+        """
+
+        return self.scores[0]
+
+#=============================================================================
+
+class Cohort:
+    """An object for storing all students in a cohort."""
+
+    #-------------------------------------------------------------------------
+
+    def __init__(self, year, season):
+        """Cohort(year, season)
+
+        Initializes a new cohort.
+
+        Positional arguments:
+            year (int) - 2-digit cohort year
+            season (int) - season ID (0 Su, 1 Fa, 2 Sp)
+        """
+
+        # Initialize attributes
+        self.year = year
+        self.season = season
+
+        # Initialize student list
+        self.students = []
+
+    #-------------------------------------------------------------------------
+
+    def __str__(self):
+        """str(Cohort)
+
+        Converts cohort into a string in FaYY, SpYY, or SuYY format.
+        """
+
+        if season == 0:
+            return "Su" + str(year)
+        elif season == 1:
+            return "Fa" + str(year)
+        else:
+            return "Sp" + str(year)
+
+    #-------------------------------------------------------------------------
+
+    def add_student(self, student):
+        """Cohort.add_student(student)
+
+        Adds a student to the cohort and gives the student a pointer to it.
+
+        Positional arguments:
+            student (Student) - student object to add to the cohort
+        """
+
+        # Add student to list and give a pointer to self
+        self.students.append(student)
+        student.cohort = self
+
+    #-------------------------------------------------------------------------
+
+    def best_scores(self):
+        """Cohort.best_score()
+
+        Returns the best scores of all students in the cohort
+        """
+
+        return [s.best_score() for s in self.students]
+
+    #-------------------------------------------------------------------------
+
+    def last_scores(self):
+        """Cohort.last_score()
+
+        Returns the most recent scores of all students in the cohort
+        """
+
+        return [s.last_score() for s in self.students]
+
+#=============================================================================
+# General Functions
 #=============================================================================
 
 #-----------------------------------------------------------------------------
+
 def date_group(date):
     """date_group(date)
     
@@ -39,36 +205,7 @@ def date_group(date):
         return "Sp" + str((y + 1) % 100)
 
 #-----------------------------------------------------------------------------
-def cohort_x(cstr, base=16):
-    """cohort_x(cstr[, base])
-    
-    Converts a cohort string into an x-coordinate for plotting a time series.
-    
-    Positional arguments:
-        cstr (str) - cohort string, in "FaYY", "SpYY", or "SuYY" format
 
-    Keyword arguments:
-        base (int) - 2-digit base year (default 16)
-    
-    Returns:
-        (float) - number roughly representing years since base year
-    """
-    
-    # Divide into season and year
-    if len(cstr) != 4:
-        raise ValueError('cohort string must be in "FaYY" format')
-    s = cstr[:2]
-    y = int(cstr[2:])
-
-    # Return years since base, plus a fraction for the season
-    if s == "Fa":
-        return (y - base) + (1.0/3.0)
-    elif s == "Sp":
-        return (y - base) + (2.0/3.0)
-    else:
-        return (y - base) + 0.0
-
-#-----------------------------------------------------------------------------
 def class_group(cls):
     """class_group(cls)
 
@@ -105,6 +242,12 @@ def class_group(cls):
         return "Discrete Mathematics"
     else:
         return "Other"
+
+#=============================================================================
+# Filtering Functions
+#=============================================================================
+
+### Select by last class, with option for most recent only or best only
 
 #=============================================================================
 # Main script
@@ -157,7 +300,7 @@ def class_group(cls):
 #   43 - last math class (end date)
 
 # Indices of the collected data are as follows:
-# 0  - (int) name hash (from "names" dictionary)
+# 0  - (int) name index (from "names" list)
 # 1  - (int) total number of placements taken
 # 2  - (int) cohort season (0 for Su, 1 for Fa, 2 for Sp)
 # 3  - (int) cohort year (last two digits only)
@@ -181,7 +324,8 @@ def class_group(cls):
 
 # Gather data from tab-separated file
 data = [] # selected data from each row
-names = {} # lists of rows, indexed by name hash
+names = {} # dictionary of names and associated name_row indices
+name_rows = [] # lists of rows, indexed by name
 modules = [] # list of module names, indexed by first appearance in file
 classes = [] # list of math classes, indexed by first appearance in file
 with open("data/AllCohorts.txt", 'r') as f:
@@ -201,12 +345,19 @@ with open("data/AllCohorts.txt", 'r') as f:
         row = line.split('\t')
         drow = [-1 for i in range(21)]
 
-        # Hash name to anonymize, then log row
-        drow[0] = hash(row[0])
+        # Log name and row
         if row[0] not in names:
-            names[row[0]] = [len(data)]
+            names[row[0]] = len(data)
+            name_rows.append([len(data)])
         else:
-            names[row[0]].append(len(data))
+
+
+        
+        drow[0] = hash(row[0])
+        if row[0] not in name_rows:
+            name_rows[drow[0]] = [len(data)]
+        else:
+            name_rows[drow[0]].append(len(data))
 
         # Log any new modules
         if row[35] != "-" and row[35] not in modules:
@@ -262,8 +413,29 @@ for i in range(5, 0, -1):
 print(modules)
 print(classes)
 
+### Find first name with multiple attempts
+nm = 0
+for i in range(len(data)):
+    if len(name_rows[data[i][0]]) > 1:
+        nm = data[i][0]
+        break
+print(name_rows[nm])
+
+### Count cohorts
+### Note: This inclues *all* exams, which is overcounting due to retakes
+### This can maybe be solved by filtering 
+##for ch in [(0, 17), (1, 17), (2, 17), (0, 18), (1, 18), (2, 18),
+##           (0, 19), (1, 19), (2, 19), (0, 20), (1, 20), (2, 20),
+##           (0, 21), (1, 21), (2, 21), (0, 22), (1, 22), (2, 22)]:
+##    tot = 0
+##    for i in range(len(data)):
+##        if data[i][2] == ch[0] and data[i][3] == ch[1]:
+##            tot += 1
+##    print(str(ch) + '\t' + str(tot))
+
 ### Stats to try gathering:
 # Trends in each score category over time (box and whisker over time?)
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
 ### (after we have result data we can try correlating placements with outcomes)
 # Before/after mastery levels for each type of learning module
+# See if self-reported last class correlates to performance
