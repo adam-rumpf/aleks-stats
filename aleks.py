@@ -39,6 +39,36 @@ def date_group(date):
         return "Sp" + str((y + 1) % 100)
 
 #-----------------------------------------------------------------------------
+def cohort_x(cstr, base=16):
+    """cohort_x(cstr[, base])
+    
+    Converts a cohort string into an x-coordinate for plotting a time series.
+    
+    Positional arguments:
+        cstr (str) - cohort string, in "FaYY", "SpYY", or "SuYY" format
+
+    Keyword arguments:
+        base (int) - 2-digit base year (default 16)
+    
+    Returns:
+        (float) - number roughly representing years since base year
+    """
+    
+    # Divide into season and year
+    if len(cstr) != 4:
+        raise ValueError('cohort string must be in "FaYY" format')
+    s = cstr[:2]
+    y = int(cstr[2:])
+
+    # Return years since base, plus a fraction for the season
+    if s == "Fa":
+        return (y - base) + (1.0/3.0)
+    elif s == "Sp":
+        return (y - base) + (2.0/3.0)
+    else:
+        return (y - base) + 0.0
+
+#-----------------------------------------------------------------------------
 def class_group(cls):
     """class_group(cls)
 
@@ -51,7 +81,7 @@ def class_group(cls):
         (str) - a standard class name, or the empty string if N/A
     """
 
-    if "no data" in cls:
+    if "no data" in cls or len(cls) < 2:
         return ""
     elif "algebra" in cls.lower() and "linear" not in cls.lower():
         return "Algebra"
@@ -233,7 +263,7 @@ print(modules)
 print(classes)
 
 ### Stats to try gathering:
-# Trends in each score category over time (requires grouping students by term; just make box and whisker charts to get an idea)
+# Trends in each score category over time (box and whisker over time?)
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
 ### (after we have result data we can try correlating placements with outcomes)
 # Before/after mastery levels for each type of learning module
