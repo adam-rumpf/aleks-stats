@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #=============================================================================
-# Classes
+# Classes (as in objects, not courses)
 #=============================================================================
 
 class Student:
@@ -36,7 +36,7 @@ class Student:
 
         # Initialize attributes
         self.name = name # student name
-        self.cohort = None # associated cohort object
+        self.cohort = None # associated cohort object (set by cohort)
         self.scores = [] # list of overall scores from all attempts
         self.subject_scores = [] # list of lists of subject scores
         self.module = module # learning module
@@ -69,7 +69,9 @@ class Student:
                 13 - "after" module mastery
         """
 
-        pass
+        self.scores.append(row[0])
+        self.subject_scores.append(row[1:12])
+        self.masteries.append(tuple(row[12:14]))
 
     #---------------------------------------------------------------------
 
