@@ -199,6 +199,25 @@ class Student:
         else:
             return self.scores[0]
 
+    #--------------------------------------------------------------------------
+
+    def mastery_improvements(self, module=None):
+        """Student.mastery_improvements([module])
+
+        Returns a list of all mastery level differences over all attempts.
+
+        Keyword arguments:
+            module (int) - module filter (default None)
+
+        If an optional module index is specified, an empty improvement list
+        will be returned unless the specified module matches this student.
+        """
+
+        if module == None or self.module == module:
+            return [m[1] - m[0] for m in self.masteries]
+        else:
+            return []
+
 #==============================================================================
 
 class Cohort:
@@ -298,20 +317,41 @@ class Cohort:
     def best_scores(self):
         """Cohort.best_scores()
 
-        Returns the best scores of all students in the cohort
+        Returns the best scores of all students in the cohort.
         """
 
         return [self.students[n].best_score() for n in self.students]
 
-    #-------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
 
     def last_scores(self):
         """Cohort.last_scores()
 
-        Returns the most recent scores of all students in the cohort
+        Returns the most recent scores of all students in the cohort.
         """
 
         return [self.students[n].last_score() for n in self.students]
+
+    #--------------------------------------------------------------------------
+
+    def mastery_improvements(self, module=None):
+        """Cohort.masery_improvements([module])
+
+        Returns a list of all mastery level improvements (final minus initial)
+        for all attempts.
+
+        Keyword arguments:
+            module (int) - module filter (default None)
+
+        If an optional module index is specified, only students that took the
+        specified module will be included.
+        """
+
+        m = []
+        for n in self.students:
+            m.extend(self.students[n].mastery_improvements(module=module))
+
+        return m
 
 #==============================================================================
 
@@ -489,6 +529,55 @@ class CohortReporter:
         # Use index to find student in correct cohort
         return self.cohorts[self.cohort_list[index]].students[name]
 
+    #--------------------------------------------------------------------------
+
+    def mastery_improvements(self, module=None):
+        """CohortReporter.masery_improvements([module])
+
+        Returns a list of all mastery level improvements (final minus initial)
+        for all attempts over all cohorts.
+
+        Keyword arguments:
+            module (int) - module filter (default None)
+
+        If an optional module index is specified, only students that took the
+        specified module will be included.
+        """
+
+        m = []
+        for ys in self.cohorts:
+            m.extend(self.cohorts[ys].mastery_improvements(module=module))
+
+        return m
+
+    #--------------------------------------------------------------------------
+
+    def best_scores(self):
+        """CohortReporter.best_scores()
+
+        Returns the best scores of all students over all cohorts.
+        """
+
+        scores = []
+        for ys in self.cohorts:
+            scores.extend(self.cohorts[ys].best_scores())
+
+        return scores
+
+    #--------------------------------------------------------------------------
+
+    def last_scores(self):
+        """CohortReporter.last_scores()
+
+        Returns the most recent scores of all students over all cohorts.
+        """
+
+        scores = []
+        for ys in self.cohorts:
+            scores.extend(self.cohorts[ys].last_scores())
+
+        return scores
+
 #==============================================================================
 # Functions
 #==============================================================================
@@ -577,9 +666,32 @@ def cohort_to_int(year, season, base=16):
 
     Keyword arguments:
         base (int) - base year to treat as 0
+
+    Returns:
+        (int) - integer representing the number of seasons since the beginning
+            of the base year
     """
 
     return 3*(year - base) + season
+
+#------------------------------------------------------------------------------
+
+def int_to_cohort(index, base=16):
+    """int_to_cohort(index[, base])
+
+    Converts a sequential ID to a cohort tuple.
+
+    Positional arguments:
+        index (int) - integer ID
+
+    Keyword arguments:
+        base (int) - base year to treat as 0
+
+    Returns:
+        (tuple) - (year, season) tuple
+    """
+
+    return ((index // 3) + base, index % 3)
 
 #==============================================================================
 # Main script
@@ -589,28 +701,93 @@ def cohort_to_int(year, season, base=16):
 
 report = CohortReporter("data/AllCohorts.txt")
 
-print(report.cohorts.keys())
+##print(report.cohorts.keys())
+##
+##print('-'*20)
+##
+##for i in range(5):
+##    print(report.student_list[i])
+##    print(report.student_by_index(i).scores)
+##    print(report.student_by_index(i).best_score())
+##print("...")
+##for i in range(5, 0, -1):
+##    print(report.student_list[-i])
+##    print(report.student_by_index(i).scores)
+##    print(report.student_by_index(i).best_score())
+##
+##print('-'*20)
+##
+##print(len(report.cohorts[(21,0)].students))
+##print(report.cohorts[(21,0)].best_scores())
 
+### Test code
+
+# Distribution of mastery level improvement before and after the module
+mi = report.mastery_improvements()
 print('-'*20)
-
-for i in range(5):
-    print(report.student_list[i])
-    print(report.student_by_index(i).scores)
-    print(report.student_by_index(i).best_score())
-print("...")
-for i in range(5, 0, -1):
-    print(report.student_list[-i])
-    print(report.student_by_index(i).scores)
-    print(report.student_by_index(i).best_score())
-
+print(len(mi))
+print(max(mi))
+print(min(mi))
+print(np.mean(mi))
+print(np.median(mi))
+print(np.std(mi))
+plt.figure()
+plt.title("Module Mastery Level Improvement (All)")
+plt.boxplot(mi)
+plt.show()
 print('-'*20)
+mi = report.mastery_improvements(module=0)
+print(len(mi))
+print(max(mi))
+print(min(mi))
+print(np.mean(mi))
+print(np.median(mi))
+print(np.std(mi))
+plt.figure()
+plt.title("Module Mastery Level Improvement (Precalculus Prep)")
+plt.boxplot(mi)
+plt.show()
+print('-'*20)
+mi = report.mastery_improvements(module=1)
+print(len(mi))
+print(max(mi))
+print(min(mi))
+print(np.mean(mi))
+print(np.median(mi))
+print(np.std(mi))
+plt.figure()
+plt.title("Module Mastery Level Improvement (Calculus Prep)")
+plt.boxplot(mi)
+plt.show()
 
-print(len(report.cohorts[(21,0)].students))
-print(report.cohorts[(21,0)].best_scores())
+# Distributions of overall scores during each semester
+bs = report.best_scores()
+print('-'*20)
+print(len(bs))
+print(max(bs))
+print(min(bs))
+print(np.mean(bs))
+print(np.median(bs))
+print(np.std(bs))
+plt.figure()
+plt.title("Best Overall Scores (All Cohorts)")
+plt.boxplot(bs)
+plt.show()
+print('-'*20)
+ls = report.last_scores()
+print(len(ls))
+print(max(ls))
+print(min(ls))
+print(np.mean(ls))
+print(np.median(ls))
+print(np.std(ls))
+plt.figure()
+plt.title("Last Overall Scores (All Cohorts)")
+plt.boxplot(ls)
+plt.show()
 
 ### Stats to try gathering:
 # Trends in each score category over time (box and whisker over time?)
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
 ### (after we have result data we can try correlating placements with outcomes)
-# Before/after mastery levels for each type of learning module
 # See if self-reported last class correlates to performance
