@@ -880,7 +880,7 @@ classes = (1, 2, 4, 5, 6, 8)
 bsl = [report.best_scores(last_class=i) for i in classes]
 fig, ax = plt.subplots()
 ax.boxplot(bsl, labels=["Algebra", "Trig", "Precalc", "Calc I", "Calc II",
-                        "Prob"])
+                        "Prob/Stat"])
 ax.set_ybound([-10, 110])
 ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Best Score, by Self-Reported Last Math Class")
@@ -899,3 +899,8 @@ plt.show()
 ### Stats to try gathering:
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
 ### (after we have result data we can try correlating placements with outcomes)
+# Focus on self-reported Calc I students
+    # HS vs college
+    # by cohort
+    # how many placed into precalculus versus calculus
+    # subject performance
