@@ -598,14 +598,16 @@ class CohortReporter:
 
     #--------------------------------------------------------------------------
 
-    def best_scores(self, last_level=None, last_class=None):
-        """CohortReporter.best_scores([last_level][, last_class])
+    def best_scores(self, last_level=None, last_class=None, cohort_list=[]):
+        """CohortReporter.best_scores([last_level][, last_class][, cohort_list])
 
         Returns the best scores of all students over all cohorts.
         
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
+            cohort_list (list) - set of cohort (year, season) tuples (default
+                empty list)
 
         If any filter is set to something other than None, only students
         matching the filter value will be included.
@@ -613,6 +615,8 @@ class CohortReporter:
 
         scores = []
         for ys in self.cohorts:
+            if len(cohort_list) > 0 and ys not in cohort_list:
+                continue
             scores.extend(self.cohorts[ys].best_scores(last_level=last_level,
                                                        last_class=last_class))
 
@@ -620,14 +624,16 @@ class CohortReporter:
 
     #--------------------------------------------------------------------------
 
-    def last_scores(self, last_level=None, last_class=None):
-        """CohortReporter.last_scores([last_level][, last_class])
+    def last_scores(self, last_level=None, last_class=None, cohort_list=[]):
+        """CohortReporter.last_scores([last_level][, last_class][, cohort_list])
 
         Returns the most recent scores of all students over all cohorts.
         
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
+            cohort_list (list) - set of cohort (year, season) tuples (default
+                empty list)
 
         If any filter is set to something other than None, only students
         matching the filter value will be included.
@@ -635,6 +641,8 @@ class CohortReporter:
 
         scores = []
         for ys in self.cohorts:
+            if len(cohort_list) > 0 and ys not in cohort_list:
+                continue
             scores.extend(self.cohorts[ys].last_scores(last_level=last_level,
                                                        last_class=last_class))
 
@@ -864,8 +872,7 @@ bsl[1] = report.best_scores(last_level=1)
 fig, ax = plt.subplots()
 ax.boxplot(bsl, labels=["High School", "College"])
 ax.set_ybound([-10, 110])
-ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray',
-              alpha=0.5)
+ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Best Score, by Self-Reported Last Class Level")
 plt.show()
 
@@ -875,12 +882,20 @@ fig, ax = plt.subplots()
 ax.boxplot(bsl, labels=["Algebra", "Trig", "Precalc", "Calc I", "Calc II",
                         "Prob"])
 ax.set_ybound([-10, 110])
-ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray',
-              alpha=0.5)
+ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Best Score, by Self-Reported Last Math Class")
 plt.show()
 
+dates = [(17, 1), (18, 0), (18, 1), (19, 0), (19, 1), (19, 2), (20, 0), (20, 1),
+         (20, 2), (21, 0), (21, 1), (21, 2)]
+bsl = [report.best_scores(cohort_list=[ys]) for ys in dates]
+fig, ax = plt.subplots()
+ax.boxplot(bsl, labels=[str(report.cohorts[ys]) for ys in dates])
+ax.set_ybound([-10, 110])
+ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+plt.title("Best Score, by Cohort")
+plt.show()
+
 ### Stats to try gathering:
-# Trends in each score category over time (box and whisker over time?)
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
 ### (after we have result data we can try correlating placements with outcomes)
