@@ -105,7 +105,8 @@ class Student:
 
     #--------------------------------------------------------------------------
 
-    def __init__(self, name, module=-1, last_level=-1, last_class=-1):
+    def __init__(self, name, cohort=None, module=-1, last_level=-1,
+                 last_class=-1):
         """Student(name[, module][, last_level][, last_class])
 
         Constructs a new student and initializes empty storage attributes.
@@ -114,6 +115,7 @@ class Student:
             name (str) - student name
 
         Keyword arguments:
+            cohort (Cohort) - associated Cohort object
             module (int) - module index (default -1)
             last_level (int) - level of last math class taken (default -1)
             last_class (int) - class ID of last math class taken (default -1)
@@ -126,10 +128,10 @@ class Student:
 
         # Initialize attributes
         self.name = name # student name
-        self.cohort = None # associated cohort object (set by cohort)
+        self.cohort = cohort # associated cohort object
         self.scores = [] # list of overall scores from all attempts
         self.subject_scores = [] # list of lists of subject scores
-        self.module = module # learning module
+        self.module = module # learning modules
         self.masteries = [] # before/after tuples for each module attempt
         self.last_level = last_level # last math class level
         self.last_class = last_class # last math class list index
@@ -218,8 +220,8 @@ class Cohort:
         self.year = year
         self.season = season
 
-        # Initialize student list
-        self.students = []
+        # Initialize student dictionary, indexed by name
+        self.students = {}
 
     #--------------------------------------------------------------------------
 
@@ -229,27 +231,67 @@ class Cohort:
         Converts cohort into a string in FaYY, SpYY, or SuYY format.
         """
 
-        if season == 0:
-            return "Su" + str(year)
-        elif season == 1:
-            return "Fa" + str(year)
+        if self.season == 0:
+            return "Su" + str(self.year)
+        elif self.season == 1:
+            return "Fa" + str(self.year)
         else:
-            return "Sp" + str(year)
+            return "Sp" + str(self.year)
+
+    #--------------------------------------------------------------------------
+
+    def create_student(self, name, module=-1, last_level=-1, last_class=-1):
+        """Cohort.create_student(name[, module][, last_level][, last_class])
+
+        Creates a new Student object in this cohort.
+
+        Positional arguments:
+            name (str) - name of new student
+
+        Keyword arguments:
+            module (int) - module index (default -1)
+            last_level (int) - level of last math class taken (default -1)
+            last_class (int) - class ID of last math class taken (default -1)
+        """
+
+        # Create student object with given arguments and give pointer to self
+        self.students[name] = Student(name, cohort=self, module=module,
+                                      last_level=last_level,
+                                      last_class=last_class)
 
     #--------------------------------------------------------------------------
 
     def add_student(self, student):
         """Cohort.add_student(student)
 
-        Adds a student to the cohort and links student to self.
+        Adds an existing student to the cohort and links student to self.
         
         Positional arguments:
             student (Student) - student object to add to the cohort
         """
 
-        # Add student to list and give a pointer to self
-        self.students.append(student)
+        # Add student to dictionary and give a pointer to self
+        self.students[student.name] = student
         student.cohort = self
+
+    #--------------------------------------------------------------------------
+
+    def update_student(self, name, score, subjects, mastery=None):
+        """Cohort.update_student(name, score, subjects[, mastery])
+
+        Updates a student to log a new attempt.
+        
+        Positional arguments:
+            name (str) - name of student to update
+            score (int) - overall attempt score
+            subjects (list) - list of subject attempt scores
+
+        Keyword arguments:
+            mastery (tuple) mastery tuple, if applicable (default None)
+        """
+
+        # Call student's logging method
+        self.students[name].log_attempt(score, subjects, mastery=mastery)
 
     #--------------------------------------------------------------------------
 
@@ -293,7 +335,7 @@ class CohortReporter:
                 (default None, which initializes an empty container)
         """
 
-        # Initialize cohort dictionary, indexed by (year,season) tuple
+        # Initialize cohort dictionary, indexed by (year, season) tuple
         self.cohorts = {}
 
         # Read given input file
@@ -311,8 +353,83 @@ class CohortReporter:
             fname (str) - file name to read for student/cohort information
         """
 
-        ###
-        pass
+        with open(fname, 'r') as f:
+            first = True
+            for line in f:
+
+                # Skip the first line
+                if first:
+                    first = False
+                    continue
+
+                # Student entries begin with a quotation mark
+                if line[0] != '"':
+                    continue
+
+                # Gather tab-separated row
+                row = line.split('\t')
+
+                # Find cohort, and create a new Cohort if needed
+                ys = date_group(row[8]) # (year, season) ID tuple
+                if ys not in self.cohorts:
+                    self.cohorts[ys] = Cohort(ys[0], ys[1])
+                
+                # Find student name
+                name = row[0]
+
+                # Gather score
+                score = int(row[12].replace('%',''))
+
+                # Gather subject score list
+                subjects = [int(row[14+2*i].replace('%','')) for i in range(11)]
+
+                # Gather module and masteries
+                module = -1 # module ID
+                mastery = None # (initial, final) mastery levels
+                if len(row[35]) > 1:
+                    if "precalculus" in row[35].lower():
+                        module = 0
+                    elif "calculus" in row[35].lower():
+                        module = 1
+                    mastery = (int(row[36].replace('%','')),
+                               int(row[37].replace('%','')))
+
+                # Gather last class data
+                cls = -1 # class ID from subject_list above
+                level = -1 # class level ID
+                if len(row[41]) > 1:
+                    if "high school" in row[41].lower():
+                        level = 0
+                    elif "college" in row[41].lower():
+                        level = 1
+                    cls = class_group(row[42])
+
+                # Create new student if needed
+                if name not in self.cohorts[ys].students:
+                    self.cohorts[ys].create_student(name, module=module,
+                                                    last_level=level,
+                                                    last_class=cls)
+
+                # Add attempt information to student
+                self.cohorts[ys].update_student(name, score, subjects,
+                                                    mastery=mastery)
+
+                ###
+                print(ys)
+                print(name)
+                print(score)
+                print(subjects)
+                print(module_dict[module])
+                print(mastery)
+                print(level_dict[level])
+                print(class_dict[cls])
+                print("-"*20)
+                print(self.cohorts[ys])
+                print(self.cohorts[ys].students[name].scores)
+                print(self.cohorts[ys].students[name].subject_scores)
+                print(self.cohorts[ys].students[name].masteries)
+
+                break
 
 #==============================================================================
 # Functions
@@ -346,11 +463,11 @@ def date_group(date):
     
     # Use month and day to determine season
     if m <= 5:
-        return (0, y % 100)
+        return (y % 100, 0)
     elif m <= 8:
-        return (1, y % 100)
+        return (y % 100, 1)
     else:
-        return (2, (y + 1) % 100)
+        return ((y + 1) % 100, 2)
 
 #------------------------------------------------------------------------------
 
@@ -416,104 +533,104 @@ def class_group(cls):
 # 19 - (int) last math class (-1 for unknown, 0 for high school, 1 for college)
 # 20 - (int) last math class index (-1 if unknown)
 
-# Gather data from tab-separated file
-data = [] # selected data from each row
-names = {} # dictionary of names and associated name_row indices
-name_rows = [] # lists of rows, indexed by name
-modules = [] # list of module names, indexed by first appearance in file
-classes = [] # list of math classes, indexed by first appearance in file
-with open("data/AllCohorts.txt", 'r') as f:
-    first = True
-    for line in f:
-        
-        # Skip the first line
-        if first:
-            first = False
-            continue
-        
-        # Student entries begin with a quotation mark
-        if line[0] != '"':
-            continue
-        
-        # Gather row from file and initialize new data row
-        row = line.split('\t')
-        drow = [-1 for i in range(21)]
-
-        # Log name and row
-        if row[0] not in names:
-            names[row[0]] = len(data)
-            name_rows.append([len(data)])
-        else:
-
-
-        
-        drow[0] = hash(row[0])
-        if row[0] not in name_rows:
-            name_rows[drow[0]] = [len(data)]
-        else:
-            name_rows[drow[0]].append(len(data))
-
-        # Log any new modules
-        if row[35] != "-" and row[35] not in modules:
-            modules.append(row[35])
-
-        # Log any new classes
-        cls = class_group(row[42])
-        if len(cls) > 0 and cls not in classes:
-            classes.append(cls)
-
-        # Gather placement data
-        drow[1] = int(row[5]) # placements taken
-
-        # Find cohort group
-        dg = date_group(row[8]) # cohort string
-        if dg[:2] == "Su":
-            drow[2] = 0 # season code
-        elif dg[:2] == "Fa":
-            drow[2] = 1
-        else:
-            drow[2] = 2
-        drow[3] = int(dg[2:]) # 2-digit year
-
-        # Gather placement results
-        for i in range(12):
-            drow[4+i] = int(row[12+2*i].replace('%',''))
-
-        # Gather module index and mastery level (unless module is "-")
-        if row[35] != "-":
-            drow[16] = modules.index(row[35]) # module index
-            drow[17] = int(row[36].replace('%','')) # initial mastery
-            drow[18] = int(row[37].replace('%','')) # current mastery
-
-        # Gather last math class level
-        if row[41].lower() == "high school":
-            drow[19] = 0
-        elif row[41].lower() == "college":
-            drow[19] = 1
-
-        # Gather last math class index (unless unknown)
-        if len(cls) > 0:
-            drow[20] = classes.index(cls)
-
-        # Add new data row
-        data.append(drow)
-
-###
-for i in range(5):
-    print(data[i])
-print("...")
-for i in range(5, 0, -1):
-    print(data[-i])
-print(modules)
-print(classes)
-
-### Find first name with multiple attempts
-nm = 0
-for i in range(len(data)):
-    if len(name_rows[data[i][0]]) > 1:
-        nm = data[i][0]
-        break
-print(name_rows[nm])
+### Gather data from tab-separated file
+##data = [] # selected data from each row
+##names = {} # dictionary of names and associated name_row indices
+##name_rows = [] # lists of rows, indexed by name
+##modules = [] # list of module names, indexed by first appearance in file
+##classes = [] # list of math classes, indexed by first appearance in file
+##with open("data/AllCohorts.txt", 'r') as f:
+##    first = True
+##    for line in f:
+##        
+##        # Skip the first line
+##        if first:
+##            first = False
+##            continue
+##        
+##        # Student entries begin with a quotation mark
+##        if line[0] != '"':
+##            continue
+##        
+##        # Gather row from file and initialize new data row
+##        row = line.split('\t')
+##        drow = [-1 for i in range(21)]
+##
+##        # Log name and row
+##        if row[0] not in names:
+##            names[row[0]] = len(data)
+##            name_rows.append([len(data)])
+##        else:
+##
+##
+##        
+##        drow[0] = hash(row[0])
+##        if row[0] not in name_rows:
+##            name_rows[drow[0]] = [len(data)]
+##        else:
+##            name_rows[drow[0]].append(len(data))
+##
+##        # Log any new modules
+##        if row[35] != "-" and row[35] not in modules:
+##            modules.append(row[35])
+##
+##        # Log any new classes
+##        cls = class_group(row[42])
+##        if len(cls) > 0 and cls not in classes:
+##            classes.append(cls)
+##
+##        # Gather placement data
+##        drow[1] = int(row[5]) # placements taken
+##
+##        # Find cohort group
+##        dg = date_group(row[8]) # cohort string
+##        if dg[:2] == "Su":
+##            drow[2] = 0 # season code
+##        elif dg[:2] == "Fa":
+##            drow[2] = 1
+##        else:
+##            drow[2] = 2
+##        drow[3] = int(dg[2:]) # 2-digit year
+##
+##        # Gather placement results
+##        for i in range(12):
+##            drow[4+i] = int(row[12+2*i].replace('%',''))
+##
+##        # Gather module index and mastery level (unless module is "-")
+##        if row[35] != "-":
+##            drow[16] = modules.index(row[35]) # module index
+##            drow[17] = int(row[36].replace('%','')) # initial mastery
+##            drow[18] = int(row[37].replace('%','')) # current mastery
+##
+##        # Gather last math class level
+##        if row[41].lower() == "high school":
+##            drow[19] = 0
+##        elif row[41].lower() == "college":
+##            drow[19] = 1
+##
+##        # Gather last math class index (unless unknown)
+##        if len(cls) > 0:
+##            drow[20] = classes.index(cls)
+##
+##        # Add new data row
+##        data.append(drow)
+##
+#####
+##for i in range(5):
+##    print(data[i])
+##print("...")
+##for i in range(5, 0, -1):
+##    print(data[-i])
+##print(modules)
+##print(classes)
+##
+##### Find first name with multiple attempts
+##nm = 0
+##for i in range(len(data)):
+##    if len(name_rows[data[i][0]]) > 1:
+##        nm = data[i][0]
+##        break
+##print(name_rows[nm])
 
 ### Count cohorts
 ### Note: This inclues *all* exams, which is overcounting due to retakes
@@ -526,6 +643,9 @@ print(name_rows[nm])
 ##        if data[i][2] == ch[0] and data[i][3] == ch[1]:
 ##            tot += 1
 ##    print(str(ch) + '\t' + str(tot))
+
+report = CohortReporter("data/AllCohorts.txt")
+print(report.cohorts.keys())
 
 ### Stats to try gathering:
 # Trends in each score category over time (box and whisker over time?)
