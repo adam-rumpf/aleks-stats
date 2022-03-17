@@ -314,23 +314,69 @@ class Cohort:
 
     #--------------------------------------------------------------------------
 
-    def best_scores(self):
-        """Cohort.best_scores()
+    def best_scores(self, last_level=None, last_class=None):
+        """Cohort.best_scores([last_level][, last_class])
 
         Returns the best scores of all students in the cohort.
+
+        Keyword arguments:
+            last_level (int) - last class level filter (default None)
+            last_class (int) - last class filter (default None)
+
+        If any filter is set to something other than None, only students
+        matching the filter value will be included.
         """
 
-        return [self.students[n].best_score() for n in self.students]
+        if last_level == None and last_class == None:
+            # If no filters are specified, include all best scores
+            return [self.students[n].best_score() for n in self.students]
+        else:
+            # Otherwise only include students that match the filter
+            scores = []
+            
+            for n in self.students:
+                if last_level != None:
+                    if self.students[n].last_level != last_level:
+                        continue
+                if last_class != None:
+                    if self.students[n].last_class != last_class:
+                        continue
+                scores.append(self.students[n].best_score())
+                
+            return scores
 
     #--------------------------------------------------------------------------
 
-    def last_scores(self):
-        """Cohort.last_scores()
+    def last_scores(self, last_level=None, last_class=None):
+        """Cohort.last_scores([last_level][, last_class])
 
         Returns the most recent scores of all students in the cohort.
+
+        Keyword arguments:
+            last_level (int) - last class level filter (default None)
+            last_class (int) - last class filter (default None)
+
+        If any filter is set to something other than None, only students
+        matching the filter value will be included.
         """
 
-        return [self.students[n].last_score() for n in self.students]
+        if last_level == None and last_class == None:
+            # If no filters are specified, include all last scores
+            return [self.students[n].last_score() for n in self.students]
+        else:
+            # Otherwise only include students that match the filter
+            scores = []
+            
+            for n in self.students:
+                if last_level != None:
+                    if self.students[n].last_level != last_level:
+                        continue
+                if last_class != None:
+                    if self.students[n].last_class != last_class:
+                        continue
+                scores.append(self.students[n].last_score())
+                
+            return scores
 
     #--------------------------------------------------------------------------
 
@@ -552,29 +598,45 @@ class CohortReporter:
 
     #--------------------------------------------------------------------------
 
-    def best_scores(self):
-        """CohortReporter.best_scores()
+    def best_scores(self, last_level=None, last_class=None):
+        """CohortReporter.best_scores([last_level][, last_class])
 
         Returns the best scores of all students over all cohorts.
+        
+        Keyword arguments:
+            last_level (int) - last class level filter (default None)
+            last_class (int) - last class filter (default None)
+
+        If any filter is set to something other than None, only students
+        matching the filter value will be included.
         """
 
         scores = []
         for ys in self.cohorts:
-            scores.extend(self.cohorts[ys].best_scores())
+            scores.extend(self.cohorts[ys].best_scores(last_level=last_level,
+                                                       last_class=last_class))
 
         return scores
 
     #--------------------------------------------------------------------------
 
-    def last_scores(self):
-        """CohortReporter.last_scores()
+    def last_scores(self, last_level=None, last_class=None):
+        """CohortReporter.last_scores([last_level][, last_class])
 
         Returns the most recent scores of all students over all cohorts.
+        
+        Keyword arguments:
+            last_level (int) - last class level filter (default None)
+            last_class (int) - last class filter (default None)
+
+        If any filter is set to something other than None, only students
+        matching the filter value will be included.
         """
 
         scores = []
         for ys in self.cohorts:
-            scores.extend(self.cohorts[ys].last_scores())
+            scores.extend(self.cohorts[ys].last_scores(last_level=last_level,
+                                                       last_class=last_class))
 
         return scores
 
@@ -722,72 +784,70 @@ report = CohortReporter("data/AllCohorts.txt")
 
 ### Test code
 
+print("\n")
+
 # Distribution of mastery level improvement before and after the module
-mi = report.mastery_improvements()
-print('-'*20)
-print(len(mi))
-print(max(mi))
-print(min(mi))
-print(np.mean(mi))
-print(np.median(mi))
-print(np.std(mi))
-plt.figure()
-plt.title("Module Mastery Level Improvement (All)")
-plt.boxplot(mi)
-plt.show()
-print('-'*20)
-mi = report.mastery_improvements(module=0)
-print(len(mi))
-print(max(mi))
-print(min(mi))
-print(np.mean(mi))
-print(np.median(mi))
-print(np.std(mi))
-plt.figure()
-plt.title("Module Mastery Level Improvement (Precalculus Prep)")
-plt.boxplot(mi)
-plt.show()
-print('-'*20)
-mi = report.mastery_improvements(module=1)
-print(len(mi))
-print(max(mi))
-print(min(mi))
-print(np.mean(mi))
-print(np.median(mi))
-print(np.std(mi))
-plt.figure()
-plt.title("Module Mastery Level Improvement (Calculus Prep)")
-plt.boxplot(mi)
-plt.show()
+def mastery_improvements(module=None):
+    mi = report.mastery_improvements(module=module)
+    if len(mi) == 0:
+        return None
+    print('-'*20)
+    print("n = " + str(len(mi)))
+    print("max = " + str(max(mi)))
+    print("min = " + str(min(mi)))
+    print("mean = " + str(np.mean(mi)))
+    print("median = " + str(np.median(mi)))
+    print("std dev = " + str(np.std(mi)))
+    print('-'*20)
+    print("\n")
+    plt.figure()
+    title = "Module Mastery Level Improvement"
+    if module == 0:
+        title += " (Precalculus Prep)"
+    elif module == 1:
+        title += " (Calculus Prep)"
+    else:
+        title += " (All)"
+    plt.title(title)
+    plt.boxplot(mi)
+    plt.show()
+
+mastery_improvements()
+mastery_improvements(module=0)
+mastery_improvements(module=1)
 
 # Distributions of overall scores during each semester
-bs = report.best_scores()
-print('-'*20)
-print(len(bs))
-print(max(bs))
-print(min(bs))
-print(np.mean(bs))
-print(np.median(bs))
-print(np.std(bs))
-plt.figure()
-plt.title("Best Overall Scores (All Cohorts)")
-plt.boxplot(bs)
-plt.show()
-print('-'*20)
-ls = report.last_scores()
-print(len(ls))
-print(max(ls))
-print(min(ls))
-print(np.mean(ls))
-print(np.median(ls))
-print(np.std(ls))
-plt.figure()
-plt.title("Last Overall Scores (All Cohorts)")
-plt.boxplot(ls)
-plt.show()
+def best_scores(last_level=None, last_class=None):
+    bs = report.best_scores(last_level=last_level, last_class=last_class)
+    if len(bs) == 0:
+        return None
+    print('-'*20)
+    print("n = " + str(len(bs)))
+    print("max = " + str(max(bs)))
+    print("min = " + str(min(bs)))
+    print("mean = " + str(np.mean(bs)))
+    print("median = " + str(np.median(bs)))
+    print("std dev = " + str(np.std(bs)))
+    print('-'*20)
+    print("\n")
+    plt.figure()
+    title = "Best Overall Scores (All Cohorts"
+    if last_level != None:
+        title += ", " + level_dict[last_level]
+    if last_class != None:
+        title += ", " + class_dict[last_class]
+    title += ")"
+    plt.title(title)
+    plt.boxplot(bs)
+    plt.show()
+
+best_scores()
+best_scores(last_level=0)
+best_scores(last_level=1)
+for i in range(len(subject_list)):
+    best_scores(last_class=i)
 
 ### Stats to try gathering:
 # Trends in each score category over time (box and whisker over time?)
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
 ### (after we have result data we can try correlating placements with outcomes)
-# See if self-reported last class correlates to performance
