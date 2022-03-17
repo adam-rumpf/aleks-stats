@@ -812,9 +812,20 @@ def mastery_improvements(module=None):
     plt.boxplot(mi)
     plt.show()
 
-mastery_improvements()
-mastery_improvements(module=0)
-mastery_improvements(module=1)
+#mastery_improvements()
+#mastery_improvements(module=0)
+#mastery_improvements(module=1)
+
+mil = [None, None]
+mil[0] = report.mastery_improvements(module=0)
+mil[1] = report.mastery_improvements(module=1)
+fig, ax = plt.subplots()
+ax.boxplot(mil, labels=["Precalculus Prep", "Calculus Prep"])
+ax.set_ybound([-10, 110])
+ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray',
+              alpha=0.5)
+plt.title("Module Mastery Level Improvement")
+plt.show()
 
 # Distributions of overall scores during each semester
 def best_scores(last_level=None, last_class=None):
@@ -841,11 +852,33 @@ def best_scores(last_level=None, last_class=None):
     plt.boxplot(bs)
     plt.show()
 
-best_scores()
-best_scores(last_level=0)
-best_scores(last_level=1)
-for i in range(len(subject_list)):
-    best_scores(last_class=i)
+#best_scores()
+#best_scores(last_level=0)
+#best_scores(last_level=1)
+#for i in range(len(subject_list)):
+#    best_scores(last_class=i)
+
+bsl = [None, None]
+bsl[0] = report.best_scores(last_level=0)
+bsl[1] = report.best_scores(last_level=1)
+fig, ax = plt.subplots()
+ax.boxplot(bsl, labels=["High School", "College"])
+ax.set_ybound([-10, 110])
+ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray',
+              alpha=0.5)
+plt.title("Best Score, by Self-Reported Last Class Level")
+plt.show()
+
+classes = (1, 2, 4, 5, 6, 8)
+bsl = [report.best_scores(last_class=i) for i in classes]
+fig, ax = plt.subplots()
+ax.boxplot(bsl, labels=["Algebra", "Trig", "Precalc", "Calc I", "Calc II",
+                        "Prob"])
+ax.set_ybound([-10, 110])
+ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray',
+              alpha=0.5)
+plt.title("Best Score, by Self-Reported Last Math Class")
+plt.show()
 
 ### Stats to try gathering:
 # Trends in each score category over time (box and whisker over time?)
