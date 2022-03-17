@@ -301,7 +301,7 @@ class Cohort:
         Returns the best scores of all students in the cohort
         """
 
-        return [s.best_score() for s in self.students]
+        return [self.students[n].best_score() for n in self.students]
 
     #-------------------------------------------------------------------------
 
@@ -311,7 +311,7 @@ class Cohort:
         Returns the most recent scores of all students in the cohort
         """
 
-        return [s.last_score() for s in self.students]
+        return [self.students[n].last_score() for n in self.students]
 
 #==============================================================================
 
@@ -326,7 +326,7 @@ class CohortReporter:
     #--------------------------------------------------------------------------
 
     def __init__(self, fname=None):
-        """AllCohorts([fname])
+        """CohortReporter([fname])
 
         Initializes a storage object based on a given input file.
 
@@ -338,20 +338,35 @@ class CohortReporter:
         # Initialize cohort dictionary, indexed by (year, season) tuple
         self.cohorts = {}
 
+        # Initialize lists of student names and cohort tuples (equal length)
+        self.student_list = []
+        self.cohort_list = []
+
         # Read given input file
         if fname != None:
             self.read_file(fname)
 
     #--------------------------------------------------------------------------
 
-    def read_file(self, fname):
-        """AllCohorts.read_file(fname)
+    def read_file(self, fname, quiet=False):
+        """CohortReporter.read_file(fname)
 
         Gathers students and cohorts from a given input file.
 
         Positional arguments:
             fname (str) - file name to read for student/cohort information
+
+        Keyword arguments:
+            quiet (bool) - whether to suppress progress messages (default False)
         """
+
+        # Counts
+        total_students = 0 # total number of students
+        total_attempts = 0 # total number of attempts
+
+        # Print start message
+        if not quiet:
+            print("Reading file '" + fname + "' ...")
 
         with open(fname, 'r') as f:
             first = True
@@ -375,7 +390,7 @@ class CohortReporter:
                     self.cohorts[ys] = Cohort(ys[0], ys[1])
                 
                 # Find student name
-                name = row[0]
+                name = row[0].replace('"','')
 
                 # Gather score
                 score = int(row[12].replace('%',''))
@@ -409,27 +424,70 @@ class CohortReporter:
                     self.cohorts[ys].create_student(name, module=module,
                                                     last_level=level,
                                                     last_class=cls)
+                    total_students += 1
+
+                    # Add student and their cohort to lists
+                    self.student_list.append(name)
+                    self.cohort_list.append(ys)
 
                 # Add attempt information to student
                 self.cohorts[ys].update_student(name, score, subjects,
                                                     mastery=mastery)
+                total_attempts += 1
 
-                ###
-                print(ys)
-                print(name)
-                print(score)
-                print(subjects)
-                print(module_dict[module])
-                print(mastery)
-                print(level_dict[level])
-                print(class_dict[cls])
-                print("-"*20)
-                print(self.cohorts[ys])
-                print(self.cohorts[ys].students[name].scores)
-                print(self.cohorts[ys].students[name].subject_scores)
-                print(self.cohorts[ys].students[name].masteries)
+        # Print end message
+        if not quiet:
+            print("Done!")
+            print(str(total_attempts) + " attempts logged.")
+            print(str(total_students) + " unique students logged.")
 
-                break
+    #--------------------------------------------------------------------------
+
+    def student_by_name(self, name):
+        """CohortReporter.student_by_name(name)
+
+        Returns the Student object for a given student name.
+
+        Positional arguments:
+            name (str) - student name to find
+
+        Returns:
+            (Student) - student object with given name, or None if not found
+        """
+
+        # Verify that student is logged
+        if name not in self.student_list:
+            return None
+
+        # Find student index in list
+        index = self.student_list.index(name)
+
+        # Use index to find student in correct cohort
+        return self.cohorts[self.cohort_list[index]][name]
+
+    #--------------------------------------------------------------------------
+
+    def student_by_index(self, index):
+        """CohortReporter.student_by_index(index)
+
+        Returns the Student object in a given position on the student list.
+
+        Positional arguments:
+            index (int) - position of student to find on list
+
+        Returns:
+            (Student) - student object with given index, or None if not found
+        """
+
+        # Verify that index is within bounds
+        if index < 0 or index >= len(self.student_list):
+            return None
+
+        # Find student name
+        name = self.student_list[index]
+
+        # Use index to find student in correct cohort
+        return self.cohorts[self.cohort_list[index]].students[name]
 
 #==============================================================================
 # Functions
@@ -506,146 +564,49 @@ def class_group(cls):
     else:
         return 0
 
+#------------------------------------------------------------------------------
+
+def cohort_to_int(year, season, base=16):
+    """cohort_to_int(year, season[, base])
+
+    Converts cohort tuple to a unique sequential ID.
+
+    Positional arguments:
+        year (int) - 2-digit year
+        season (int) - season ID
+
+    Keyword arguments:
+        base (int) - base year to treat as 0
+    """
+
+    return 3*(year - base) + season
+
 #==============================================================================
 # Main script
 #==============================================================================
 
-# Indices of the collected data are as follows:
-# 0  - (int) name index (from "names" list)
-# 1  - (int) total number of placements taken
-# 2  - (int) cohort season (0 for Su, 1 for Fa, 2 for Sp)
-# 3  - (int) cohort year (last two digits only)
-# 4  - (int) placement results (0-100)
-# 5  - (int) result (Whole Numbers, Fractions, and Decimals)
-# 6  - (int) result (Percents, Proportions, and Geometry)
-# 7  - (int) result (Signed Numbers, Linear Equations and Inequalities)
-# 8  - (int) result (Lines and Systems of Linear Equations)
-# 9  - (int) result (Relations and Functions)
-# 10 - (int) result (Integer Exponents and Factoring)
-# 11 - (int) result (Quadratic and Polynomial Functions)
-# 12 - (int) result (Rational Expressions and Functions)
-# 13 - (int) result (Radicals and Rational Exponents)
-# 14 - (int) result (Exponentials and Logarithms)
-# 15 - (int) result (Trigonometry)
-# 16 - (int) prep and learning module index (-1 if N/A)
-# 17 - (int) initial mastery (-1 if N/A)
-# 18 - (int) current mastery (-1 if N/A)
-# 19 - (int) last math class (-1 for unknown, 0 for high school, 1 for college)
-# 20 - (int) last math class index (-1 if unknown)
-
-### Gather data from tab-separated file
-##data = [] # selected data from each row
-##names = {} # dictionary of names and associated name_row indices
-##name_rows = [] # lists of rows, indexed by name
-##modules = [] # list of module names, indexed by first appearance in file
-##classes = [] # list of math classes, indexed by first appearance in file
-##with open("data/AllCohorts.txt", 'r') as f:
-##    first = True
-##    for line in f:
-##        
-##        # Skip the first line
-##        if first:
-##            first = False
-##            continue
-##        
-##        # Student entries begin with a quotation mark
-##        if line[0] != '"':
-##            continue
-##        
-##        # Gather row from file and initialize new data row
-##        row = line.split('\t')
-##        drow = [-1 for i in range(21)]
-##
-##        # Log name and row
-##        if row[0] not in names:
-##            names[row[0]] = len(data)
-##            name_rows.append([len(data)])
-##        else:
-##
-##
-##        
-##        drow[0] = hash(row[0])
-##        if row[0] not in name_rows:
-##            name_rows[drow[0]] = [len(data)]
-##        else:
-##            name_rows[drow[0]].append(len(data))
-##
-##        # Log any new modules
-##        if row[35] != "-" and row[35] not in modules:
-##            modules.append(row[35])
-##
-##        # Log any new classes
-##        cls = class_group(row[42])
-##        if len(cls) > 0 and cls not in classes:
-##            classes.append(cls)
-##
-##        # Gather placement data
-##        drow[1] = int(row[5]) # placements taken
-##
-##        # Find cohort group
-##        dg = date_group(row[8]) # cohort string
-##        if dg[:2] == "Su":
-##            drow[2] = 0 # season code
-##        elif dg[:2] == "Fa":
-##            drow[2] = 1
-##        else:
-##            drow[2] = 2
-##        drow[3] = int(dg[2:]) # 2-digit year
-##
-##        # Gather placement results
-##        for i in range(12):
-##            drow[4+i] = int(row[12+2*i].replace('%',''))
-##
-##        # Gather module index and mastery level (unless module is "-")
-##        if row[35] != "-":
-##            drow[16] = modules.index(row[35]) # module index
-##            drow[17] = int(row[36].replace('%','')) # initial mastery
-##            drow[18] = int(row[37].replace('%','')) # current mastery
-##
-##        # Gather last math class level
-##        if row[41].lower() == "high school":
-##            drow[19] = 0
-##        elif row[41].lower() == "college":
-##            drow[19] = 1
-##
-##        # Gather last math class index (unless unknown)
-##        if len(cls) > 0:
-##            drow[20] = classes.index(cls)
-##
-##        # Add new data row
-##        data.append(drow)
-##
-#####
-##for i in range(5):
-##    print(data[i])
-##print("...")
-##for i in range(5, 0, -1):
-##    print(data[-i])
-##print(modules)
-##print(classes)
-##
-##### Find first name with multiple attempts
-##nm = 0
-##for i in range(len(data)):
-##    if len(name_rows[data[i][0]]) > 1:
-##        nm = data[i][0]
-##        break
-##print(name_rows[nm])
-
-### Count cohorts
-### Note: This inclues *all* exams, which is overcounting due to retakes
-### This can maybe be solved by filtering 
-##for ch in [(0, 17), (1, 17), (2, 17), (0, 18), (1, 18), (2, 18),
-##           (0, 19), (1, 19), (2, 19), (0, 20), (1, 20), (2, 20),
-##           (0, 21), (1, 21), (2, 21), (0, 22), (1, 22), (2, 22)]:
-##    tot = 0
-##    for i in range(len(data)):
-##        if data[i][2] == ch[0] and data[i][3] == ch[1]:
-##            tot += 1
-##    print(str(ch) + '\t' + str(tot))
+### Tests
 
 report = CohortReporter("data/AllCohorts.txt")
+
 print(report.cohorts.keys())
+
+print('-'*20)
+
+for i in range(5):
+    print(report.student_list[i])
+    print(report.student_by_index(i).scores)
+    print(report.student_by_index(i).best_score())
+print("...")
+for i in range(5, 0, -1):
+    print(report.student_list[-i])
+    print(report.student_by_index(i).scores)
+    print(report.student_by_index(i).best_score())
+
+print('-'*20)
+
+print(len(report.cohorts[(21,0)].students))
+print(report.cohorts[(21,0)].best_scores())
 
 ### Stats to try gathering:
 # Trends in each score category over time (box and whisker over time?)
