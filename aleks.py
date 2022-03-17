@@ -1,4 +1,55 @@
-"""A script for gathering stats from ALEKS cohort reports."""
+"""A script for gathering stats from ALEKS cohort reports.
+
+The expected format for the report file is a tab-separated text file for which
+each student row contains the following columns (starred entries are those that
+this script is built to gather):
+* 0  - name
+  1  - email
+  2
+  3  - date of last login
+  4  - placement assessment number
+* 5  - total number of placements taken
+  6  - start date
+  7  - start time
+* 8  - end date
+  9  - end time
+  10 - proctored assessment
+  11 - time in placement
+* 12 - placement results
+  13 - topics (Whole Numbers, Fractions, and Decimals)
+* 14 - result (Whole Numbers, Fractions, and Decimals)
+  15 - topics (Percents, Proportions, and Geometry)
+* 16 - result (Percents, Proportions, and Geometry)
+  17 - topics (Signed Numbers, Linear Equations and Inequalities)
+* 18 - result (Signed Numbers, Linear Equations and Inequalities)
+  19 - topics (Lines and Systems of Linear Equations)
+* 20 - result (Lines and Systems of Linear Equations)
+  21 - topics (Relations and Functions)
+* 22 - result (Relations and Functions)
+  23 - topics (Integer Exponents and Factoring)
+* 24 - result (Integer Exponents and Factoring)
+  25 - topics (Quadratic and Polynomial Functions)
+* 26 - result (Quadratic and Polynomial Functions)
+  27 - topics (Rational Expressions and Functions)
+* 28 - result (Rational Expressions and Functions)
+  29 - topics (Radicals and Rational Exponents)
+* 30 - result (Radicals and Rational Exponents)
+  31 - topics (Exponentials and Logarithms)
+* 32 - result (Exponentials and Logarithms)
+  33 - topics (Trigonometry)
+* 34 - result (Trigonometry)
+* 35 - prep and learning module
+* 36 - initial mastery
+* 37 - current mastery
+  38 - total number of topics learned
+  39 - total number of topics learned per hour
+  40 - total time in ALEKS prep
+* 41 - last math class (level [High School or College])
+* 42 - last math class (class)
+  43 - last math class (end date)
+
+
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -137,8 +188,8 @@ class Cohort:
     def add_student(self, student):
         """Cohort.add_student(student)
 
-        Adds a student to the cohort and gives the student a pointer to it.
-
+        Adds a student to the cohort and links student to self.
+        
         Positional arguments:
             student (Student) - student object to add to the cohort
         """
@@ -150,7 +201,7 @@ class Cohort:
     #-------------------------------------------------------------------------
 
     def best_scores(self):
-        """Cohort.best_score()
+        """Cohort.best_scores()
 
         Returns the best scores of all students in the cohort
         """
@@ -160,7 +211,7 @@ class Cohort:
     #-------------------------------------------------------------------------
 
     def last_scores(self):
-        """Cohort.last_score()
+        """Cohort.last_scores()
 
         Returns the most recent scores of all students in the cohort
         """
@@ -168,7 +219,50 @@ class Cohort:
         return [s.last_score() for s in self.students]
 
 #=============================================================================
-# General Functions
+
+class CohortReporter:
+    """A class to store a group of cohorts and generate summary reports.
+
+    Meant for use a a single global object for storing all cohorts with all
+    students, and for handling any data processing needed to gather summary
+    statistics for all cohorts.
+    """
+
+    #-------------------------------------------------------------------------
+
+    def __init__(self, fname=None):
+        """AllCohorts([fname])
+
+        Initializes a storage object based on a given input file.
+
+        Keyword arguments:
+            fname (str) - file name to read for student/cohort information
+                (default None, which initializes an empty container)
+        """
+
+        # Initialize cohort dictionary, indexed by (year,season) tuple
+        self.cohorts = {}
+
+        # Read given input file
+        if fname != None:
+            self.read_file(fname)
+
+    #-------------------------------------------------------------------------
+
+    def read_file(self, fname):
+        """AllCohorts.read_file(fname)
+
+        Gathers students and cohorts from a given input file.
+
+        Positional arguments:
+            fname (str) - file name to read for student/cohort information
+        """
+
+        ###
+        pass
+
+#=============================================================================
+# Functions
 #=============================================================================
 
 #-----------------------------------------------------------------------------
@@ -176,13 +270,14 @@ class Cohort:
 def date_group(date):
     """date_group(date)
     
-    Converts a date string into the nearest matching cohort string.
+    Converts a date string into a year/season ID tuple.
     
     Positional arguments:
         date (str) - date string, in "MM/DD/YYYY" format
     
     Returns:
-        (str) - cohort string, in "FaYY", "SpYY", or "SuYY" format
+        (tuple) - tuple with 2-digit year and season ID
+            (0 for Su, 1 for Fa, 2 for Sp)
 
     The cutoffs for Fall, Spring, and Summer are:
         Jan-May: Summer
@@ -200,11 +295,11 @@ def date_group(date):
     
     # Use month and day to determine season
     if m <= 5:
-        return "Su" + str(y % 100)
+        return (0, y % 100)
     elif m <= 8:
-        return "Fa" + str(y % 100)
+        return (1, y % 100)
     else:
-        return "Sp" + str((y + 1) % 100)
+        return (2, (y + 1) % 100)
 
 #-----------------------------------------------------------------------------
 
@@ -246,60 +341,8 @@ def class_group(cls):
         return "Other"
 
 #=============================================================================
-# Filtering Functions
-#=============================================================================
-
-### Select by last class, with option for most recent only or best only
-
-#=============================================================================
 # Main script
 #=============================================================================
-
-# Column indices of the input file are as follows:
-# * 0  - name
-#   1  - email
-#   2
-#   3  - date of last login
-#   4  - placement assessment number
-# * 5  - total number of placements taken
-#   6  - start date
-#   7  - start time
-# * 8  - end date
-#   9  - end time
-#   10 - proctored assessment
-#   11 - time in placement
-# * 12 - placement results
-#   13 - topics (Whole Numbers, Fractions, and Decimals)
-# * 14 - result (Whole Numbers, Fractions, and Decimals)
-#   15 - topics (Percents, Proportions, and Geometry)
-# * 16 - result (Percents, Proportions, and Geometry)
-#   17 - topics (Signed Numbers, Linear Equations and Inequalities)
-# * 18 - result (Signed Numbers, Linear Equations and Inequalities)
-#   19 - topics (Lines and Systems of Linear Equations)
-# * 20 - result (Lines and Systems of Linear Equations)
-#   21 - topics (Relations and Functions)
-# * 22 - result (Relations and Functions)
-#   23 - topics (Integer Exponents and Factoring)
-# * 24 - result (Integer Exponents and Factoring)
-#   25 - topics (Quadratic and Polynomial Functions)
-# * 26 - result (Quadratic and Polynomial Functions)
-#   27 - topics (Rational Expressions and Functions)
-# * 28 - result (Rational Expressions and Functions)
-#   29 - topics (Radicals and Rational Exponents)
-# * 30 - result (Radicals and Rational Exponents)
-#   31 - topics (Exponentials and Logarithms)
-# * 32 - result (Exponentials and Logarithms)
-#   33 - topics (Trigonometry)
-# * 34 - result (Trigonometry)
-# * 35 - prep and learning module
-# * 36 - initial mastery
-# * 37 - current mastery
-#   38 - total number of topics learned
-#   39 - total number of topics learned per hour
-#   40 - total time in ALEKS prep
-# * 41 - last math class (level [High School or College])
-# * 42 - last math class (class)
-#   43 - last math class (end date)
 
 # Indices of the collected data are as follows:
 # 0  - (int) name index (from "names" list)
