@@ -51,6 +51,7 @@ this script is built to gather):
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patch
 
 #==============================================================================
 # Initializing index name lists
@@ -871,6 +872,25 @@ def transpose(a):
 
     return [[a[j][i] for j in range(len(a))] for i in range(len(a[0]))]
 
+#------------------------------------------------------------------------------
+
+def riffle(*args):
+    """riffle(*args)
+
+    Riffles lists of equal length.
+
+    The resulting list alternates between elements of each of the input lists.
+    """
+
+    n = len(args)
+
+    # Verify that all lists are the same length
+    for i in range(1, n):
+        if len(args[0]) != len(args[i]):
+            raise ValueError("riffled lists must be the same length")
+    
+    return [args[i%n][i//n] for i in range(n*len(args[0]))]
+
 #==============================================================================
 # Main script
 #==============================================================================
@@ -1024,7 +1044,7 @@ ax5.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Subject Scores for Overall Scores Above 70%")
 plt.show()
 
-bss = transpose(report.subject_scores(score_range=[0,70]))
+bss = transpose(report.subject_scores(score_range=[0,69]))
 fig6, ax6 = plt.subplots()
 ax6.boxplot(bss)
 ax6.set_xticklabels(subject_list_short, rotation=45, ha='right')
@@ -1032,6 +1052,38 @@ fig6.subplots_adjust(bottom=0.2)
 ax6.set_ybound([-10, 110])
 ax6.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Subject Scores for Overall Scores Below 70%")
+plt.show()
+
+bsa = transpose(report.subject_scores(score_range=[70,100]))
+bsb = transpose(report.subject_scores(score_range=[0,69]))
+bss = riffle(bsa, bsb)
+pos = [i + 2*(i//2) for i in range(len(bss))] # extra space between pairs
+fig7, ax7 = plt.subplots()
+bp = ax7.boxplot(bss, positions=pos)
+ax7.set_xticklabels(riffle(['' for s in subject_list_short],
+                           subject_list_short),rotation=45, ha='right')
+fig7.subplots_adjust(bottom=0.2)
+fig7.set_figwidth(10)
+ax7.set_ybound([-10, 110])
+###
+ax7.set(axisbelow=True)
+box_colors = ['royalblue', 'khaki']
+num_boxes = len(bss)
+medians = np.empty(num_boxes)
+for i in range(num_boxes):
+    box = bp['boxes'][i]
+    box_x = []
+    box_y = []
+    for j in range(5):
+        box_x.append(box.get_xdata()[j])
+        box_y.append(box.get_ydata()[j])
+    box_coords = np.column_stack([box_x, box_y])
+    ax7.add_patch(patch.Polygon(box_coords, facecolor=box_colors[i % 2]))
+fig7.text(0.14, 0.3, "≥70%", backgroundcolor=box_colors[0])
+fig7.text(0.14, 0.24, "<70%", backgroundcolor=box_colors[1])
+###
+ax7.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+plt.title("Subject Scores, Overall Scores Above 70% versus Below 70%")
 plt.show()
 
 ### Stats to try gathering:
