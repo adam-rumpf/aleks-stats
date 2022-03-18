@@ -300,25 +300,26 @@ class Cohort:
 
     #--------------------------------------------------------------------------
 
-    def filter_students(self, last_level=None, last_class=None, cutoff=None):
-        """Cohort.filter_students([last_level][, last_class][, cutoff])
+    def filter_students(self, last_level=None, last_class=None,
+                        score_range=None):
+        """Cohort.filter_students([last_level][, last_class][, score_range])
 
         Selects the set of students that meet a set of filter criteria.
 
         Keyword arguments:
             last_level (int) - last class level (default None)
             last_class (int) - last class (default None)
-            cutoff (int) - cutoff for best score (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
 
         Returns:
             (list) - list of Student objects in this cohort that pass the
                 filters
 
         Setting any filter to None causes it to be ignored, so for example
-            filter_students(last_class=1, cutoff=70)
+            filter_students(last_class=1, score_range=[70,100])
         would select all students in this cohort with a last class ID of 1 and
-        a best score of at least 70%, regardless of any of their other
-        attributes.
+        a best score of 70%-100%, regardless of any of their other attributes.
         """
 
         # Initialize output list
@@ -333,8 +334,10 @@ class Cohort:
             if (last_class != None and
                 self.students[n].last_class != last_class):
                 continue
-            if (cutoff != None and self.students[n].best_score() < cutoff):
-                continue
+            if (score_range != None):
+                score = self.students[n].best_score()
+                if (score < score_range[0] or score > score_range[1]):
+                    continue
             # If the student passes all filters, add to list
             slist.append(self.students[n])
 
@@ -361,15 +364,17 @@ class Cohort:
 
     #--------------------------------------------------------------------------
 
-    def best_scores(self, last_level=None, last_class=None, cutoff=None):
-        """Cohort.best_scores([last_level][, last_class][, cutoff])
+    def best_scores(self, last_level=None, last_class=None, score_range=None):
+        """Cohort.best_scores([last_level][, last_class][, score_range])
 
         Returns the best scores of all students in the cohort.
 
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
-            cutoff (int) - cutoff for best score (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
+
 
         If any filter is set to something other than None, only students
         matching the filter value will be included.
@@ -379,19 +384,20 @@ class Cohort:
         return [s.best_score() for s in
                 self.filter_students(last_level=last_level,
                                      last_class=last_class,
-                                     cutoff=cutoff)]
+                                     score_range=score_range)]
 
     #--------------------------------------------------------------------------
 
-    def last_scores(self, last_level=None, last_class=None, cutoff=None):
-        """Cohort.last_scores([last_level][, last_class][, cutoff])
+    def last_scores(self, last_level=None, last_class=None, score_range=None):
+        """Cohort.last_scores([last_level][, last_class][, score_range])
 
         Returns the most recent scores of all students in the cohort.
 
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
-            cutoff (int) - cutoff for best score (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
 
         If any filter is set to something other than None, only students
         matching the filter value will be included.
@@ -400,19 +406,21 @@ class Cohort:
         return [s.best_score() for s in
                 self.filter_students(last_level=last_level,
                                      last_class=last_class,
-                                     cutoff=cutoff)]
+                                     score_range=score_range)]
 
     #--------------------------------------------------------------------------
 
-    def subject_scores(self, last_level=None, last_class=None, cutoff=None):
-        """Cohort.subject_scores([last_level][, last_class][, cutoff])
+    def subject_scores(self, last_level=None, last_class=None,
+                       score_range=None):
+        """Cohort.subject_scores([last_level][, last_class][, score_range])
 
         Returns a list of subject score lists for all students in the cohort.
 
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
-            cutoff (int) - cutoff for best score (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
 
         Returns:
             (list) - list of individual subject scores, indexed according to
@@ -425,7 +433,7 @@ class Cohort:
         return [s.best_score(subjects=True)[1] for s in
                 self.filter_students(last_level=last_level,
                                      last_class=last_class,
-                                     cutoff=cutoff)]
+                                     score_range=score_range)]
 
     #--------------------------------------------------------------------------
 
@@ -647,9 +655,9 @@ class CohortReporter:
 
     #--------------------------------------------------------------------------
 
-    def best_scores(self, last_level=None, last_class=None, cutoff=None,
+    def best_scores(self, last_level=None, last_class=None, score_range=None,
                     cohort_list=[]):
-        """CohortReporter.best_scores([last_level][, last_class][, cutoff]
+        """CohortReporter.best_scores([last_level][, last_class][, score_range]
                                       [, cohort_list])
 
         Returns the best scores of all students over all cohorts.
@@ -657,7 +665,8 @@ class CohortReporter:
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
-            cutoff (int) - cutoff for best score (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
             cohort_list (list) - set of cohort (year, season) tuples (default
                 empty list)
 
@@ -671,15 +680,15 @@ class CohortReporter:
                 continue
             scores.extend(self.cohorts[ys].best_scores(last_level=last_level,
                                                        last_class=last_class,
-                                                       cutoff=cutoff))
+                                                       score_range=score_range))
 
         return scores
 
     #--------------------------------------------------------------------------
 
-    def last_scores(self, last_level=None, last_class=None, cutoff=None,
+    def last_scores(self, last_level=None, last_class=None, score_range=None,
                     cohort_list=[]):
-        """CohortReporter.last_scores([last_level][, last_class][, cutoff]
+        """CohortReporter.last_scores([last_level][, last_class][, score_range]
                                       [, cohort_list])
 
         Returns the most recent scores of all students over all cohorts.
@@ -687,7 +696,8 @@ class CohortReporter:
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
-            cutoff (int) - cutoff for best score (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
             cohort_list (list) - set of cohort (year, season) tuples (default
                 empty list)
 
@@ -701,23 +711,24 @@ class CohortReporter:
                 continue
             scores.extend(self.cohorts[ys].last_scores(last_level=last_level,
                                                        last_class=last_class,
-                                                       cutoff=cutoff))
+                                                       score_range=score_range))
 
         return scores
 
     #--------------------------------------------------------------------------
 
-    def subject_scores(self, last_level=None, last_class=None, cutoff=None,
-                       cohort_list=[]):
-        """CohortReporter.subject_scores([last_level][, last_class][, cutoff]
-                                         [, cohort_list])
+    def subject_scores(self, last_level=None, last_class=None,
+                       score_range=None, cohort_list=[]):
+        """CohortReporter.subject_scores([last_level][, last_class]
+                                         [, score_range][, cohort_list])
 
         Returns lists of subject scores for all students
         
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
-            cutoff (int) - cutoff for best score (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
             cohort_list (list) - set of cohort (year, season) tuples (default
                 empty list)
 
@@ -731,7 +742,7 @@ class CohortReporter:
                 continue
             subj.extend(self.cohorts[ys].subject_scores(last_level=last_level,
                                                         last_class=last_class,
-                                                        cutoff=cutoff))
+                                                      score_range=score_range))
 
         return subj
 
@@ -1001,6 +1012,26 @@ fig4.subplots_adjust(bottom=0.2)
 ax4.set_ybound([-10, 110])
 ax4.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("All Subject Scores")
+plt.show()
+
+bss = transpose(report.subject_scores(score_range=[70,100]))
+fig5, ax5 = plt.subplots()
+ax5.boxplot(bss)
+ax5.set_xticklabels(subject_list_short, rotation=45, ha='right')
+fig5.subplots_adjust(bottom=0.2)
+ax5.set_ybound([-10, 110])
+ax5.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+plt.title("Subject Scores for Overall Scores Above 70%")
+plt.show()
+
+bss = transpose(report.subject_scores(score_range=[0,70]))
+fig6, ax6 = plt.subplots()
+ax6.boxplot(bss)
+ax6.set_xticklabels(subject_list_short, rotation=45, ha='right')
+fig6.subplots_adjust(bottom=0.2)
+ax6.set_ybound([-10, 110])
+ax6.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+plt.title("Subject Scores for Overall Scores Below 70%")
 plt.show()
 
 ### Stats to try gathering:
