@@ -399,6 +399,31 @@ class Cohort:
 
     #--------------------------------------------------------------------------
 
+    def subject_scores(self, last_level=None, last_class=None, cutoff=None):
+        """Cohort.subject_scores([last_level][, last_class][, cutoff])
+
+        Returns a list of subject score lists for all students in the cohort.
+
+        Keyword arguments:
+            last_level (int) - last class level filter (default None)
+            last_class (int) - last class filter (default None)
+            cutoff (int) - cutoff for best score (default None)
+
+        Returns:
+            (list) - list of individual subject scores, indexed according to
+                subject_list above
+
+        If any filter is set to something other than None, only students
+        matching the filter value will be included.
+        """
+
+        return [s.best_score(subjects=True)[1] for s in
+                self.filter_students(last_level=last_level,
+                                     last_class=last_class,
+                                     cutoff=cutoff)]
+
+    #--------------------------------------------------------------------------
+
     def mastery_improvements(self, module=None):
         """Cohort.masery_improvements([module])
 
