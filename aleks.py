@@ -903,4 +903,4 @@ plt.show()
     # HS vs college
     # by cohort
     # how many placed into precalculus versus calculus
-    # subject performance
+    # subject performance (see the weakest areas for students that placed into precalculus, below overall score 70%)
