@@ -96,6 +96,11 @@ subject_list = ["Whole Numbers, Fractions, and Decimals",                  #  0
                 "Exponentials and Logarithms",                             #  9
                 "Trigonometry"]                                            # 10
 
+# Shorter subject name lists for use in plots
+subject_list_short = ["Num/Frac", "Percent/Geo", "Lin Eq/Ineq", "Lines/Lin Sys",
+                      "Rel/Func", "Int Exp/Factor", "Polynomial", "Rational",
+                      "Radical", "Exp/Log", "Trig"]
+
 #==============================================================================
 # Classes (as in objects, not courses)
 #==============================================================================
@@ -700,6 +705,36 @@ class CohortReporter:
 
         return scores
 
+    #--------------------------------------------------------------------------
+
+    def subject_scores(self, last_level=None, last_class=None, cutoff=None,
+                       cohort_list=[]):
+        """CohortReporter.subject_scores([last_level][, last_class][, cutoff]
+                                         [, cohort_list])
+
+        Returns lists of subject scores for all students
+        
+        Keyword arguments:
+            last_level (int) - last class level filter (default None)
+            last_class (int) - last class filter (default None)
+            cutoff (int) - cutoff for best score (default None)
+            cohort_list (list) - set of cohort (year, season) tuples (default
+                empty list)
+
+        If any filter is set to something other than None, only students
+        matching the filter value will be included.
+        """
+
+        subj = []
+        for ys in self.cohorts:
+            if len(cohort_list) > 0 and ys not in cohort_list:
+                continue
+            subj.extend(self.cohorts[ys].subject_scores(last_level=last_level,
+                                                        last_class=last_class,
+                                                        cutoff=cutoff))
+
+        return subj
+
 #==============================================================================
 # Functions
 #==============================================================================
@@ -815,6 +850,16 @@ def int_to_cohort(index, base=16):
 
     return ((index // 3) + base, index % 3)
 
+#------------------------------------------------------------------------------
+
+def transpose(a):
+    """transpose(a)
+
+    Transposes a list of lists.
+    """
+
+    return [[a[j][i] for j in range(len(a))] for i in range(len(a[0]))]
+
 #==============================================================================
 # Main script
 #==============================================================================
@@ -921,31 +966,41 @@ def best_scores(last_level=None, last_class=None):
 bsl = [None, None]
 bsl[0] = report.best_scores(last_level=0)
 bsl[1] = report.best_scores(last_level=1)
-fig, ax = plt.subplots()
-ax.boxplot(bsl, labels=["High School", "College"])
-ax.set_ybound([-10, 110])
-ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+fig1, ax1 = plt.subplots()
+ax1.boxplot(bsl, labels=["High School", "College"])
+ax1.set_ybound([-10, 110])
+ax1.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Best Score, by Self-Reported Last Class Level")
 plt.show()
 
 classes = (1, 2, 4, 5, 6, 8)
 bsl = [report.best_scores(last_class=i) for i in classes]
-fig, ax = plt.subplots()
-ax.boxplot(bsl, labels=["Algebra", "Trig", "Precalc", "Calc I", "Calc II",
+fig2, ax2 = plt.subplots()
+ax2.boxplot(bsl, labels=["Algebra", "Trig", "Precalc", "Calc I", "Calc II",
                         "Prob/Stat"])
-ax.set_ybound([-10, 110])
-ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+ax2.set_ybound([-10, 110])
+ax2.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Best Score, by Self-Reported Last Math Class")
 plt.show()
 
 dates = [(17, 1), (18, 0), (18, 1), (19, 0), (19, 1), (19, 2), (20, 0), (20, 1),
          (20, 2), (21, 0), (21, 1), (21, 2)]
 bsl = [report.best_scores(cohort_list=[ys]) for ys in dates]
-fig, ax = plt.subplots()
-ax.boxplot(bsl, labels=[str(report.cohorts[ys]) for ys in dates])
-ax.set_ybound([-10, 110])
-ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+fig3, ax3 = plt.subplots()
+ax3.boxplot(bsl, labels=[str(report.cohorts[ys]) for ys in dates])
+ax3.set_ybound([-10, 110])
+ax3.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Best Score, by Cohort")
+plt.show()
+
+bss = transpose(report.subject_scores())
+fig4, ax4 = plt.subplots()
+ax4.boxplot(bss)
+ax4.set_xticklabels(subject_list_short, rotation=45, ha='right')
+fig4.subplots_adjust(bottom=0.2)
+ax4.set_ybound([-10, 110])
+ax4.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+plt.title("All Subject Scores")
 plt.show()
 
 ### Stats to try gathering:
@@ -955,4 +1010,3 @@ plt.show()
     # HS vs college
     # by cohort
     # how many placed into precalculus versus calculus
-    # subject performance (see the weakest areas for students that placed into precalculus, below overall score 70%)
