@@ -295,6 +295,48 @@ class Cohort:
 
     #--------------------------------------------------------------------------
 
+    def filter_students(self, last_level=None, last_class=None, cutoff=None):
+        """Cohort.filter_students([last_level][, last_class][, cutoff])
+
+        Selects the set of students that meet a set of filter criteria.
+
+        Keyword arguments:
+            last_level (int) - last class level (default None)
+            last_class (int) - last class (default None)
+            cutoff (int) - cutoff for best score (default None)
+
+        Returns:
+            (list) - list of Student objects in this cohort that pass the
+                filters
+
+        Setting any filter to None causes it to be ignored, so for example
+            filter_students(last_class=1, cutoff=70)
+        would select all students in this cohort with a last class ID of 1 and
+        a best score of at least 70%, regardless of any of their other
+        attributes.
+        """
+
+        # Initialize output list
+        slist = []
+
+        # Process each student
+        for n in self.students:
+            # Skip students that don't pass a defined filter
+            if (last_level != None and
+                self.students[n].last_level != last_level):
+                continue
+            if (last_class != None and
+                self.students[n].last_class != last_class):
+                continue
+            if (cutoff != None and self.students[n].best_score() < cutoff):
+                continue
+            # If the student passes all filters, add to list
+            slist.append(self.students[n])
+
+        return slist
+
+    #--------------------------------------------------------------------------
+
     def update_student(self, name, score, subjects, mastery=None):
         """Cohort.update_student(name, score, subjects[, mastery])
 
@@ -314,69 +356,46 @@ class Cohort:
 
     #--------------------------------------------------------------------------
 
-    def best_scores(self, last_level=None, last_class=None):
-        """Cohort.best_scores([last_level][, last_class])
+    def best_scores(self, last_level=None, last_class=None, cutoff=None):
+        """Cohort.best_scores([last_level][, last_class][, cutoff])
 
         Returns the best scores of all students in the cohort.
 
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
+            cutoff (int) - cutoff for best score (default None)
 
         If any filter is set to something other than None, only students
         matching the filter value will be included.
         """
 
-        if last_level == None and last_class == None:
-            # If no filters are specified, include all best scores
-            return [self.students[n].best_score() for n in self.students]
-        else:
-            # Otherwise only include students that match the filter
-            scores = []
-            
-            for n in self.students:
-                if last_level != None:
-                    if self.students[n].last_level != last_level:
-                        continue
-                if last_class != None:
-                    if self.students[n].last_class != last_class:
-                        continue
-                scores.append(self.students[n].best_score())
-                
-            return scores
+        # Return a list of student best scores that pass all filters
+        return [s.best_score() for s in
+                self.filter_students(last_level=last_level,
+                                     last_class=last_class,
+                                     cutoff=cutoff)]
 
     #--------------------------------------------------------------------------
 
-    def last_scores(self, last_level=None, last_class=None):
-        """Cohort.last_scores([last_level][, last_class])
+    def last_scores(self, last_level=None, last_class=None, cutoff=None):
+        """Cohort.last_scores([last_level][, last_class][, cutoff])
 
         Returns the most recent scores of all students in the cohort.
 
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
+            cutoff (int) - cutoff for best score (default None)
 
         If any filter is set to something other than None, only students
         matching the filter value will be included.
         """
 
-        if last_level == None and last_class == None:
-            # If no filters are specified, include all last scores
-            return [self.students[n].last_score() for n in self.students]
-        else:
-            # Otherwise only include students that match the filter
-            scores = []
-            
-            for n in self.students:
-                if last_level != None:
-                    if self.students[n].last_level != last_level:
-                        continue
-                if last_class != None:
-                    if self.students[n].last_class != last_class:
-                        continue
-                scores.append(self.students[n].last_score())
-                
-            return scores
+        return [s.best_score() for s in
+                self.filter_students(last_level=last_level,
+                                     last_class=last_class,
+                                     cutoff=cutoff)]
 
     #--------------------------------------------------------------------------
 
@@ -598,14 +617,17 @@ class CohortReporter:
 
     #--------------------------------------------------------------------------
 
-    def best_scores(self, last_level=None, last_class=None, cohort_list=[]):
-        """CohortReporter.best_scores([last_level][, last_class][, cohort_list])
+    def best_scores(self, last_level=None, last_class=None, cutoff=None,
+                    cohort_list=[]):
+        """CohortReporter.best_scores([last_level][, last_class][, cutoff]
+                                      [, cohort_list])
 
         Returns the best scores of all students over all cohorts.
         
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
+            cutoff (int) - cutoff for best score (default None)
             cohort_list (list) - set of cohort (year, season) tuples (default
                 empty list)
 
@@ -618,20 +640,24 @@ class CohortReporter:
             if len(cohort_list) > 0 and ys not in cohort_list:
                 continue
             scores.extend(self.cohorts[ys].best_scores(last_level=last_level,
-                                                       last_class=last_class))
+                                                       last_class=last_class,
+                                                       cutoff=cutoff))
 
         return scores
 
     #--------------------------------------------------------------------------
 
-    def last_scores(self, last_level=None, last_class=None, cohort_list=[]):
-        """CohortReporter.last_scores([last_level][, last_class][, cohort_list])
+    def last_scores(self, last_level=None, last_class=None, cutoff=None,
+                    cohort_list=[]):
+        """CohortReporter.last_scores([last_level][, last_class][, cutoff]
+                                      [, cohort_list])
 
         Returns the most recent scores of all students over all cohorts.
         
         Keyword arguments:
             last_level (int) - last class level filter (default None)
             last_class (int) - last class filter (default None)
+            cutoff (int) - cutoff for best score (default None)
             cohort_list (list) - set of cohort (year, season) tuples (default
                 empty list)
 
@@ -644,7 +670,8 @@ class CohortReporter:
             if len(cohort_list) > 0 and ys not in cohort_list:
                 continue
             scores.extend(self.cohorts[ys].last_scores(last_level=last_level,
-                                                       last_class=last_class))
+                                                       last_class=last_class,
+                                                       cutoff=cutoff))
 
         return scores
 
