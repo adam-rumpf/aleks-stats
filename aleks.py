@@ -1054,37 +1054,46 @@ ax6.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Subject Scores for Overall Scores Below 70%")
 plt.show()
 
-bsa = transpose(report.subject_scores(score_range=[70,100]))
-bsb = transpose(report.subject_scores(score_range=[0,69]))
-bss = riffle(bsa, bsb)
-pos = [i + 2*(i//2) for i in range(len(bss))] # extra space between pairs
-fig7, ax7 = plt.subplots()
-bp = ax7.boxplot(bss, positions=pos)
-ax7.set_xticklabels(riffle(['' for s in subject_list_short],
-                           subject_list_short),rotation=45, ha='right')
-fig7.subplots_adjust(bottom=0.2)
-fig7.set_figwidth(10)
-ax7.set_ybound([-10, 110])
-###
-ax7.set(axisbelow=True)
-box_colors = ['royalblue', 'khaki']
-num_boxes = len(bss)
-medians = np.empty(num_boxes)
-for i in range(num_boxes):
-    box = bp['boxes'][i]
-    box_x = []
-    box_y = []
-    for j in range(5):
-        box_x.append(box.get_xdata()[j])
-        box_y.append(box.get_ydata()[j])
-    box_coords = np.column_stack([box_x, box_y])
-    ax7.add_patch(patch.Polygon(box_coords, facecolor=box_colors[i % 2]))
-fig7.text(0.14, 0.3, "≥70%", backgroundcolor=box_colors[0])
-fig7.text(0.14, 0.24, "<70%", backgroundcolor=box_colors[1])
-###
-ax7.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
-plt.title("Subject Scores, Overall Scores Above 70% versus Below 70%")
-plt.show()
+# An experiment to see how the subject area distributions would differ
+# between the students placed into calculus versus precalculus at different
+# cutoff levels.
+def subject_cutoff_experiment(cutoff):
+    bsa = transpose(report.subject_scores(score_range=[cutoff,100]))
+    bsb = transpose(report.subject_scores(score_range=[0,cutoff-1]))
+    bss = riffle(bsa, bsb)
+    pos = [i + 2*(i//2) for i in range(len(bss))] # extra space between pairs
+    fig, ax = plt.subplots()
+    bp = ax.boxplot(bss, positions=pos)
+    ax.set_xticklabels(riffle(['' for s in subject_list_short],
+                               subject_list_short),rotation=45, ha='right')
+    fig.subplots_adjust(bottom=0.2)
+    fig.set_figwidth(10)
+    ax.set_ybound([-10, 110])
+    ax.set(axisbelow=True)
+    box_colors = ['royalblue', 'khaki']
+    num_boxes = len(bss)
+    medians = np.empty(num_boxes)
+    for i in range(num_boxes):
+        box = bp['boxes'][i]
+        box_x = []
+        box_y = []
+        for j in range(5):
+            box_x.append(box.get_xdata()[j])
+            box_y.append(box.get_ydata()[j])
+        box_coords = np.column_stack([box_x, box_y])
+        ax.add_patch(patch.Polygon(box_coords, facecolor=box_colors[i % 2]))
+    fig.text(0.14, 0.3, f"≥{cutoff}%", backgroundcolor=box_colors[0])
+    fig.text(0.14, 0.24, f"<{cutoff}%", backgroundcolor=box_colors[1])
+    ax.yaxis.grid(True, linestyle='-', which='major', color='lightgray',
+                   alpha=0.5)
+    plt.title(f"Subject Scores, Overall Scores Above {cutoff}% versus " +
+              f"Below {cutoff}%")
+    plt.show()
+
+subject_cutoff_experiment(70)
+
+for i in range(60, 81):
+    subject_cutoff_experiment(i)
 
 ### Stats to try gathering:
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
