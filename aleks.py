@@ -1090,15 +1090,23 @@ def subject_cutoff_experiment(cutoff):
               f"Below {cutoff}%")
     plt.show()
 
-subject_cutoff_experiment(70)
+##subject_cutoff_experiment(70)
+##
+##for i in range(60, 81):
+##    subject_cutoff_experiment(i)
 
-for i in range(60, 81):
-    subject_cutoff_experiment(i)
+hscalc = report.best_scores(last_class=5, last_level=0)
+colcalc = report.best_scores(last_class=5, last_level=1)
+fig7, ax7 = plt.subplots()
+ax7.boxplot([hscalc, colcalc], labels=["HS Calc", "College Calc"])
+ax7.set_ybound([-10, 110])
+ax7.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+plt.title("Best Score by Self-Reported Calculus Class Level")
+plt.show()
 
 ### Stats to try gathering:
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
 ### (after we have result data we can try correlating placements with outcomes)
 # Focus on self-reported Calc I students
-    # HS vs college
     # by cohort
     # how many placed into precalculus versus calculus
