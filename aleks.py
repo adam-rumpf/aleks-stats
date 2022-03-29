@@ -223,6 +223,35 @@ class Student:
             return [m[1] - m[0] for m in self.masteries]
         else:
             return []
+    
+    #--------------------------------------------------------------------------
+
+    def best_score_subset(self, subset=None):
+        """Student.best_score_subset([subset])
+
+        Returns the student's best score based on a subset of categories.
+
+        Keyword argument:
+            subset (list) - list of subjects to include in the score
+                calculation (default None, which keeps all subjects)
+
+        Returns:
+            (int) - score, based on an equal-weight average of all included
+                subjects from the student's best attempt
+        """
+
+        if subset == None:
+            subset = [i for i in range(len(subject_list)+1)]
+        
+        # Find best attempt
+        besti = self.scores.index(max(self.scores))
+        
+        # Average subject scores from best attempt
+        tot = 0
+        for i in range(len(subset)):
+            tot += self.subject_scores[besti][i]
+        
+        return round(tot/len(subset))
 
 #==============================================================================
 
@@ -376,13 +405,39 @@ class Cohort:
             score_range (list) - set of bounds [lb,ub] to keep only students
                 with a best overall score >= lb and <= ub (default None)
 
-
         If any filter is set to something other than None, only students
         matching the filter value will be included.
         """
 
         # Return a list of student best scores that pass all filters
         return [s.best_score() for s in
+                self.filter_students(last_level=last_level,
+                                     last_class=last_class,
+                                     score_range=score_range)]
+    
+    #--------------------------------------------------------------------------
+
+    def best_scores_subset(self, last_level=None, last_class=None,
+        score_range=None, subset=None):
+        """Cohort.best_scores_subset([last_level][, last_class][, score_range]
+                                     [, subset])
+
+        Returns the scores of all students based on a subset of the subjects.
+
+        Keyword arguments:
+            last_level (int) - last class level filter (default None)
+            last_class (int) - last class filter (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
+            subset (list) - list of subjects to include in the score
+                calculation (default None, which keeps all subjects)
+
+        If any filter is set to something other than None, only students
+        matching the filter value will be included.
+        """
+
+        # Return a list of student best scores that pass all filters
+        return [s.best_score_subset(subset=subset) for s in
                 self.filter_students(last_level=last_level,
                                      last_class=last_class,
                                      score_range=score_range)]
@@ -682,6 +737,39 @@ class CohortReporter:
             scores.extend(self.cohorts[ys].best_scores(last_level=last_level,
                                                        last_class=last_class,
                                                        score_range=score_range))
+
+        return scores
+    
+    #--------------------------------------------------------------------------
+
+    def best_scores_subset(self, last_level=None, last_class=None,
+                           score_range=None, cohort_list=[], subset=None):
+        """CohortReporter.best_scores_subset([last_level][, last_class]
+            [, score_range][, cohort_list][, subset])
+
+        Returns the scores of all students based on a subset of subjects.
+        
+        Keyword arguments:
+            last_level (int) - last class level filter (default None)
+            last_class (int) - last class filter (default None)
+            score_range (list) - set of bounds [lb,ub] to keep only students
+                with a best overall score >= lb and <= ub (default None)
+            cohort_list (list) - set of cohort (year, season) tuples (default
+                empty list)
+            subset (list) - list of subjects to include in the score
+                calculation (default None, which keeps all subjects)
+
+        If any filter is set to something other than None, only students
+        matching the filter value will be included.
+        """
+
+        scores = []
+        for ys in self.cohorts:
+            if len(cohort_list) > 0 and ys not in cohort_list:
+                continue
+            scores.extend(self.cohorts[ys].best_scores_subset(last_level=
+                last_level, last_class=last_class, score_range=score_range,
+                subset=subset))
 
         return scores
 
@@ -1112,6 +1200,17 @@ ax8.boxplot(bsl, labels=[str(report.cohorts[ys]) for ys in dates])
 ax8.set_ybound([-10, 110])
 ax8.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Best Score, by Cohort (Self-Reported Calculus Only)")
+plt.show()
+
+dates = [(17, 1), (18, 0), (18, 1), (19, 0), (19, 1), (19, 2), (20, 0), (20, 1),
+         (20, 2), (21, 0), (21, 1), (21, 2)]
+bsl = [report.best_scores_subset(cohort_list=[ys],
+    subset=[i for i in range(3,11)]) for ys in dates]
+fig9, ax9 = plt.subplots()
+ax9.boxplot(bsl, labels=[str(report.cohorts[ys]) for ys in dates])
+ax9.set_ybound([-10, 110])
+ax9.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+plt.title("Score by Cohort, Dropping: Num/Frac, Percent/Geo, Lin Eq/Ineq")
 plt.show()
 
 ### Stats to try gathering:
