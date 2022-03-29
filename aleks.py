@@ -1090,8 +1090,8 @@ def subject_cutoff_experiment(cutoff):
               f"Below {cutoff}%")
     plt.show()
 
-##subject_cutoff_experiment(70)
-##
+subject_cutoff_experiment(70)
+
 ##for i in range(60, 81):
 ##    subject_cutoff_experiment(i)
 
@@ -1104,9 +1104,16 @@ ax7.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
 plt.title("Best Score by Self-Reported Calculus Class Level")
 plt.show()
 
+dates = [(17, 1), (18, 0), (18, 1), (19, 0), (19, 1), (19, 2), (20, 0), (20, 1),
+         (20, 2), (21, 0), (21, 1), (21, 2)]
+bsl = [report.best_scores(cohort_list=[ys], last_class=5) for ys in dates]
+fig8, ax8 = plt.subplots()
+ax8.boxplot(bsl, labels=[str(report.cohorts[ys]) for ys in dates])
+ax8.set_ybound([-10, 110])
+ax8.yaxis.grid(True, linestyle='-', which='major', color='lightgray', alpha=0.5)
+plt.title("Best Score, by Cohort (Self-Reported Calculus Only)")
+plt.show()
+
 ### Stats to try gathering:
 # Clustering groups of similar students that span multiple terms (for later A/B testing)
 ### (after we have result data we can try correlating placements with outcomes)
-# Focus on self-reported Calc I students
-    # by cohort
-    # how many placed into precalculus versus calculus
